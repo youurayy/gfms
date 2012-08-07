@@ -3,7 +3,7 @@
 	"name": "gfms",
 	"description": "Github Flavored Markdown Server",
 	"keywords": [ "markdown", "server", "local", "reloading" ],
-	"version": "0.0.3",
+	"version": "0.0.4",
 	"homepage": "http://github.com/ypocat/gfms",
 	"repository": {
 		"type": "git",
@@ -17,7 +17,7 @@
 		"gfms": "./bin/gfms"
 	},
 	"engines": {
-		"node": ">= 0.6.0"
+		"node": "*"
 	},
 	"dependencies": {
 		"express": "*",
@@ -27,7 +27,8 @@
 		"nib": "*",
 		"optimist": "*",
 		"request": "*",
-		"socket.io": "*",
+		"ws": "*",
+		"ws-rpc": "*",
 		"stylus": "*",
 		"underscore": "*",
 		"utilz": "*"

@@ -8,15 +8,19 @@ var argv = require('optimist')
 	.default('h', 'localhost')
 	.argv;
 
-var sio = require('socket.io'), io;
 var express = require('express');
 var stylus = require('stylus');
 var nib = require('nib');
-var app = express.createServer();
+var app = express();
+var http = require('http');
+var server = http.createServer(app);
 var markdown = //require('github-flavored-markdown').parse;
 	require('./showdown.js').parse;
 var _ = require('underscore');
 var fs = require('fs');
+var ews = require('ws');
+var ws = require('ws-rpc').extend(ews);
+var wss = new ws.Server({ server: server });
 var request = require('request');
 
 var laeh = require('laeh2').leanStacks(true);
@@ -52,6 +56,7 @@ app.configure(function() {
 		}));
 	}
 
+	app.use(wss.middleware(express));
 	app.use(express.favicon());
 	app.use(app.router);
 	app.use(express.static(pub));
@@ -109,7 +114,7 @@ app.get('*', function(req, res, next) {
 			fs.watchFile(dir, { interval: 500 }, function(curr, prev) {
 				if(curr.mtime.getTime() !== prev.mtime.getTime()) {
 					console.log('file ' + dir + ' has changed');
-					io.sockets.json.send({ update: dir, content: markdown(fs.readFileSync(dir, 'utf8')) });
+					wss.message('update', { update: dir, content: markdown(fs.readFileSync(dir, 'utf8')) });
 				}
 			});
 			watched[dir] = true;
@@ -145,9 +150,7 @@ request('http://www.github.com', function(err, res, body) {
 	if(!styles.length)
 		throw 'Cannot parse .css links from Github';
 
-	app.listen(argv.p, argv.h);
-	io = sio.listen(app);
-	io.set('log level', 1);
+	server.listen(argv.p, argv.h);
 	
 	console.log('GFMS serving ' + process.cwd() + ' at http://' + argv.h + ':' + argv.p + '/ - press CTRL+C to exit.');
 });

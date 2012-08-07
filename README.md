@@ -1,6 +1,6 @@
 # Github Flavored Markdown Server (GFMS)
 
-### (based on Node.js, Express.js, Jade, Stylus, Socket.io and GFM for JavaScript)
+### (based on Node.js, Express.js, Jade, Stylus, ws-rpc and GFM for JavaScript)
 
 ---
 I could not find a tool that would allow me to preview Github Flavored Markdown files offline, so I wrote one. (Well it's not completely offline - it loads the Github CSS from Akamai and JQuery from Google's CDN, but you know how to cache them if you need to.)
