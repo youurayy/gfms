@@ -1,0 +1,29 @@
+    /*    
+        Ref: http://developer.github.com/v3/oauth/
+        Ref: https://github.com/settings/applications/new
+        Ref: http://developer.github.com/v3/markdown/
+
+        POST to: https://github.com/markdown { text: 'text', mode: 'markdown' }
+        Response: body
+
+        if error:
+            1. redirect to: https://github.com/login/oauth/authorize
+                ?client_id=APPID
+                &redirect_uri=http://HOST:PORT
+                &state=RANDOM
+            
+            2. catch the ?code= param
+    
+            3. server POST to: https://github.com/login/oauth/access_token
+                ?client_id=APPID
+                &client_secret=APPSECRET
+                &code=CODE
+                &state=RANDOM
+            
+                header: Accept: application/json
+                response: { access_token: }
+        
+            4. repeat the POST as /markdown?access_token=ACCESSTOKEN
+        
+            5. if error, go again with the redir, user will bail out as they see fit
+    */  

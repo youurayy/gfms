@@ -2,8 +2,8 @@
     "author": "Juraj Vitko (ypocat.com)",
     "name": "gfms",
     "description": "Github Flavored Markdown Server",
-    "keywords": [ "markdown", "server", "local", "reloading" ],
-    "version": "0.0.4",
+    "keywords": [ "markdown", "server", "local", "reloading", "github", "render", "gfm" ],
+    "version": "0.0.5",
     "homepage": "http://github.com/ypocat/gfms",
     "repository": {
         "type": "git",

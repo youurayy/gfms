@@ -6,6 +6,9 @@ var argv = require('optimist')
     .alias('h', 'host')
     .describe('h', 'Host address to bind to.')
     .default('h', 'localhost')
+    .boolean('a')
+    .describe('a', 'Render using Github API.')
+    .alias('a', 'api')
     .argv;
 
 var express = require('express');
@@ -120,16 +123,44 @@ app.get('*', function(req, res, next) {
             watched[dir] = true;
         }
         
-        res.render('file', {
-            file: markdown(fs.readFileSync(dir, 'utf8')),
-            title: basename(dir),
-            styles: styles,
-            fullname: dir
-        });
+        var contents = fs.readFileSync(dir, 'utf8');
+        var func = argv.a ? renderWithGithub : renderWithShowdown;
+        
+        func(contents, _x(next, true, function(err, res) {
+
+            res.render('file', {
+                file: res,
+                title: basename(dir),
+                styles: styles,
+                fullname: dir
+            });
+            
+        }));
     }
     else
         return next();
 });
+
+function renderWithShowdown(contents, cb) { // cb(err, res)
+    var res = markdown(contents);
+    cb(null, res);
+}
+
+function renderWithGithub(contents, cb) { // cb(err, res)
+    var opts = {
+        method: 'post',
+        url: 'https://github.com/markdown',
+        json: {
+            text: contents,
+            mode: 'markdown'
+        },
+        encoding: 'utf8'
+    };
+
+    request(opts, _x(cb, true, function(err, res, body) {
+        cb(null, body);
+    }));
+}
 
 process.on('SIGINT', function() {
     console.log('\nGFMS exit.');
