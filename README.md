@@ -11,9 +11,9 @@ Sure, there are various good Markdown editors for all platforms, but only a few 
 
 ```js
 function(arg) {
-	// some code here
-	for(var i = 0; i < 10; i++)
-		console.log('hello ' + i);
+    // some code here
+    for(var i = 0; i < 10; i++)
+        console.log('hello ' + i);
 }
 ```
 
@@ -27,9 +27,9 @@ Another possible shortcoming is that the URLs of the Github CSS files are scrape
 
 ## Usage
 
-	[sudo] npm install gfms -g
-	cd your-github-project-dir
-	gfms -p 1234
+    [sudo] npm install gfms -g
+    cd your-github-project-dir
+    gfms -p 1234
 
 (If you don't know how to install NPM, see here: http://npmjs.org/)
 

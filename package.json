@@ -1,41 +1,41 @@
 {
-	"author": "Juraj Vitko (ypocat.com)",
-	"name": "gfms",
-	"description": "Github Flavored Markdown Server",
-	"keywords": [ "markdown", "server", "local", "reloading" ],
-	"version": "0.0.4",
-	"homepage": "http://github.com/ypocat/gfms",
-	"repository": {
-		"type": "git",
-		"url": "git://github.com/ypocat/gfms.git"
-	},
-	"main": "gfms.js",
-	"directories": {
-		"lib": "./lib"
-	},
-	"bin": {
-		"gfms": "./bin/gfms"
-	},
-	"engines": {
-		"node": "*"
-	},
-	"dependencies": {
-		"express": "*",
-		"github-flavored-markdown": "*",
-		"jade": "*",
-		"laeh2": "*",
-		"nib": "*",
-		"optimist": "*",
-		"request": "*",
-		"ws": "*",
-		"ws-rpc": "*",
-		"stylus": "*",
-		"underscore": "*",
-		"utilz": "*"
-	},
-	"devDependencies": {
-	},
-	"licenses": [
-		{  "type" : "MIT", "url" : "https://raw.github.com/ypocat/gfms/master/LICENSE" }
-	]
+    "author": "Juraj Vitko (ypocat.com)",
+    "name": "gfms",
+    "description": "Github Flavored Markdown Server",
+    "keywords": [ "markdown", "server", "local", "reloading" ],
+    "version": "0.0.4",
+    "homepage": "http://github.com/ypocat/gfms",
+    "repository": {
+        "type": "git",
+        "url": "git://github.com/ypocat/gfms.git"
+    },
+    "main": "gfms.js",
+    "directories": {
+        "lib": "./lib"
+    },
+    "bin": {
+        "gfms": "./bin/gfms"
+    },
+    "engines": {
+        "node": "*"
+    },
+    "dependencies": {
+        "express": "*",
+        "github-flavored-markdown": "*",
+        "jade": "*",
+        "laeh2": "*",
+        "nib": "*",
+        "optimist": "*",
+        "request": "*",
+        "ws": "*",
+        "ws-rpc": "*",
+        "stylus": "*",
+        "underscore": "*",
+        "utilz": "*"
+    },
+    "devDependencies": {
+    },
+    "licenses": [
+        {  "type" : "MIT", "url" : "https://raw.github.com/ypocat/gfms/master/LICENSE" }
+    ]
 }
