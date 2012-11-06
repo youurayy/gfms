@@ -9,6 +9,9 @@ var argv = require('optimist')
     .boolean('a')
     .describe('a', 'Render using Github API.')
     .alias('a', 'api')
+    .boolean('n')
+    .describe('n', 'Disable usage of Github API when the doc is manually reloaded.')
+    .alias('n', 'no-api-on-reload')
     .argv;
 
 var express = require('express');
@@ -116,30 +119,36 @@ app.get('*', function(req, res, next) {
         if(!watched[dir]) {
             fs.watchFile(dir, { interval: 500 }, function(curr, prev) {
                 if(curr.mtime.getTime() !== prev.mtime.getTime()) {
+
                     console.log('file ' + dir + ' has changed');
-                    wss.message('update', { update: dir, content: markdown(fs.readFileSync(dir, 'utf8')) });
+                    
+                    renderFile(dir, argv.a, _x(console.log, false, function(err, rendered) {
+                        wss.message('update', { update: dir, content: err || rendered });
+                    }));
                 }
             });
             watched[dir] = true;
         }
         
-        var contents = fs.readFileSync(dir, 'utf8');
-        var func = argv.a ? renderWithGithub : renderWithShowdown;
-        
-        func(contents, _x(next, true, function(err, res) {
-
+        renderFile(dir, argv.a || argv.b, _x(next, true, function(err, rendered) {
             res.render('file', {
-                file: res,
+                file: rendered,
                 title: basename(dir),
                 styles: styles,
                 fullname: dir
             });
-            
         }));
+        
     }
     else
         return next();
 });
+
+function renderFile(file, api, cb) { // cb(err, res)
+    var contents = fs.readFileSync(file, 'utf8');
+    var func = api ? renderWithGithub : renderWithShowdown;
+    func(contents, _x(cb, true, cb));
+}
 
 function renderWithShowdown(contents, cb) { // cb(err, res)
     var res = markdown(contents);
@@ -149,7 +158,7 @@ function renderWithShowdown(contents, cb) { // cb(err, res)
 function renderWithGithub(contents, cb) { // cb(err, res)
     var opts = {
         method: 'post',
-        url: 'https://github.com/markdown',
+        url: 'https://api.github.com/markdown',
         json: {
             text: contents,
             mode: 'markdown'
@@ -158,6 +167,7 @@ function renderWithGithub(contents, cb) { // cb(err, res)
     };
 
     request(opts, _x(cb, true, function(err, res, body) {
+        console.log('remaining API requests: %d', res.headers['x-ratelimit-remaining']);
         cb(null, body);
     }));
 }
@@ -169,19 +179,26 @@ process.on('SIGINT', function() {
 
 console.log('Getting .css links from Github...');
 
+if(!argv.a && !argv.n)
+    argv.b = true;
+
 request('http://www.github.com', function(err, res, body) {
 
     if(err || res.statusCode != 200)
         throw 'Cannot load .css links from Github';
-        
+    
     var m, re = /<link href="(.+?)" media="screen" rel="stylesheet" type="text\/css" \/>/g;
     while(m = re.exec(body))
         styles.push(m[1]);
-        
+    
     if(!styles.length)
         throw 'Cannot parse .css links from Github';
-
-    server.listen(argv.p, argv.h);
+        
+    if(argv.a)
+        console.log('Using Github API to render markdown for all updates.');
+    else if(argv.b)
+        console.log('Using Github API to render markdown for manual reload updates.');
     
+    server.listen(argv.p, argv.h);
     console.log('GFMS serving ' + process.cwd() + ' at http://' + argv.h + ':' + argv.p + '/ - press CTRL+C to exit.');
 });

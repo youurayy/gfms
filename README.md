@@ -1,5 +1,11 @@
 # Github Flavored Markdown Server (GFMS)
 
+### News
+
+You can now use the option `-a` to tell GFMS to render your documents via the [Github Markdown Rendering API](http://developer.github.com/v3/markdown/). For simplicity, the public access is used, which is limited to 60 requests per hour per an IP address.
+
+If the mode `-a` is not specified, GFMS will render your doc via Github API only when you manually reload it in the browser (and on the first load). This way you are less likely ot hit the hourly API limit, because you will only use the API to check for correctness occasionally. Use `-n` to disable this feature.
+
 ### (based on Node.js, Express.js, Jade, Stylus, ws-rpc and GFM for JavaScript)
 
 ---
