@@ -187,7 +187,7 @@ request('http://www.github.com', function(err, res, body) {
     if(err || res.statusCode != 200)
         throw 'Cannot load .css links from Github';
     
-    var m, re = /<link href="(.+?)" media="screen" rel="stylesheet" type="text\/css" \/>/g;
+    var m, re = /<link href="(.+?)" media="all" rel="stylesheet" type="text\/css" \/>/g;
     while(m = re.exec(body))
         styles.push(m[1]);
     
