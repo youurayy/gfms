@@ -1,18 +1,7 @@
-var argv = require('optimist')
-    .usage('\nGithub Flavored Markdown Server.\nRun in your project\'s root directory.\nUsage: $0')
-    .demand('p')
-    .alias('p', 'port')
-    .describe('p', 'Port number to listen at.')
-    .alias('h', 'host')
-    .describe('h', 'Host address to bind to.')
-    .default('h', 'localhost')
-    .boolean('a')
-    .describe('a', 'Render using Github API.')
-    .alias('a', 'api')
-    .boolean('n')
-    .describe('n', 'Disable usage of Github API when the doc is manually reloaded.')
-    .alias('n', 'no-api-on-reload')
-    .argv;
+
+var laeh = require('laeh2').leanStacks(true);
+var _e = laeh._e;
+var _x = laeh._x;
 
 var express = require('express');
 var stylus = require('stylus');
@@ -28,13 +17,36 @@ var ews = require('ws');
 var ws = require('ws-rpc').extend(ews);
 var wss = new ws.Server({ server: server });
 var request = require('request');
-
-var laeh = require('laeh2').leanStacks(true);
-var _e = laeh._e;
-var _x = laeh._x;
+var async = require('async-mini');
+var utilz = require('utilz');
+var optimist = require('optimist');
 
 var watched = {};
-var styles = [];
+var styles = {};
+var cssUpdateInterval = 1000 * 60 * 60 * 24;
+var cssCheckInterval = 1000 * 60 * 5;
+var lastCssUpdate = 0;
+var updatingCss;
+
+function cb(err, msg) {
+    console.log(err ? (err.stack || err) : msg || 'done');
+}
+
+var argv = optimist
+    .usage('\nGithub Flavored Markdown Server.\nRun in your project\'s root directory.\nUsage: $0')
+    .demand('p')
+    .alias('p', 'port')
+    .describe('p', 'Port number to listen at.')
+    .alias('h', 'host')
+    .describe('h', 'Host address to bind to.')
+    .default('h', 'localhost')
+    .boolean('a')
+    .describe('a', 'Render using Github API.')
+    .alias('a', 'api')
+    .boolean('n')
+    .describe('n', 'Disable usage of Github API when the doc is manually reloaded.')
+    .alias('n', 'no-api-on-reload')
+    .argv;
 
 app.configure(function() {
 
@@ -70,7 +82,7 @@ app.configure(function() {
 });
 
 app.configure('development', function() {
-    require('utilz').watchFile(__filename);
+    utilz.watchFile(__filename);
 });
 
 function basename(fn) {
@@ -84,6 +96,18 @@ function is_markdown(v) {
 
 app.get('*', function(req, res, next) {
     
+    if(req.path.indexOf('/styles/') === 0) {
+        var style = styles[req.path];
+        if(!style) {
+            res.send(404);
+        }
+        else {
+            res.set('Content-Type', 'text/css');
+            // res.set('ETag', utilz.randomString());
+            return res.send(200, style);
+        }
+    }
+
     var base = req.path.replace('..', 'DENIED').replace(/\/$/, '');
     var dir = process.cwd() + base;
     
@@ -110,7 +134,7 @@ app.get('*', function(req, res, next) {
         res.render('directory', {
             files: files,
             dir: dir,
-            styles: styles,
+            styles: Object.keys(styles),
             title: basename(dir)
         });
     }
@@ -134,7 +158,7 @@ app.get('*', function(req, res, next) {
             res.render('file', {
                 file: rendered,
                 title: basename(dir),
-                styles: styles,
+                styles: Object.keys(styles),
                 fullname: dir
             });
         }));
@@ -177,28 +201,111 @@ process.on('SIGINT', function() {
     return process.exit();
 });
 
-console.log('Getting .css links from Github...');
+function loadStyle(style, cb) {
+    
+    request(style, _x(cb, true, function(err, res, body) {
+        
+        if(res.statusCode != 200)
+            throw 'Cannot load stylesheet: ' + style;
+        
+        cb(null, body);
+    }));
+}
+
+function getStylesheetBaseName(url) {
+    
+    var m = /\/([^\/]+)$/.exec(url);
+    
+    if(!m)
+        _e('unexpected stylesheet url: ' + url);
+        
+    return m[1];
+}
+
+function loadStyles(_cb) {
+    
+    if(updatingCss)
+        return;
+    updatingCss = true;
+    
+    function cb(err) {
+        updatingCss = false;
+        _cb(err);
+    }
+    
+    _x(cb, false, function() {
+    
+        console.log('Loading Github CSS...');
+    
+        request('http://www.github.com', _x(cb, true, function(err, res, body) {
+        
+            if(res.statusCode != 200)
+                throw 'Cannot load .css links from Github';
+
+            var ff = {}
+            var m;
+            var re = /href="([^"]+?assets\.github\.com\/assets\/[^"]+?\.css)"/g;
+         
+            while(m = re.exec(body)) {
+            
+                (function(url) {
+                    
+                    var base = '/styles/' + getStylesheetBaseName(url);
+                    
+                    ff[base] = _x(null, false, function(cb) {
+                        loadStyle(url, cb);
+                    });
+                    
+                })(m[1]);
+            }
+        
+            async.parallel(ff, _x(cb, true, function(err, res) {
+                styles = res;
+                cb();
+            }));
+        
+        }));
+        
+    })();
+}
+
+function startCssUpdater(interval) {
+    
+    console.log('Auto-updating CSS every ' + utilz.timeSpan(interval) + '.');
+    
+    setInterval(_x(cb, false, function() {
+        
+        if(Date.now() - lastCssUpdate > interval) {
+            
+            loadStyles(_x(cb, true, function() {
+            
+                lastCssUpdate = Date.now();
+            
+                cb(null, 'Auto-updated CSS.');
+            }));
+        }
+        
+    }), cssCheckInterval);
+}
 
 if(!argv.a && !argv.n)
     argv.b = true;
 
-request('http://www.github.com', function(err, res, body) {
-
-    if(err || res.statusCode != 200)
-        throw 'Cannot load .css links from Github';
+_x(cb, false, function() {
+    loadStyles(_x(cb, true, function() {
     
-    var m, re = /<link href="(.+?)" media="all" rel="stylesheet" type="text\/css" \/>/g;
-    while(m = re.exec(body))
-        styles.push(m[1]);
-    
-    if(!styles.length)
-        throw 'Cannot parse .css links from Github';
+        if(!Object.keys(styles).length)
+            _e('Cannot parse .css links from Github');
         
-    if(argv.a)
-        console.log('Using Github API to render markdown for all updates.');
-    else if(argv.b)
-        console.log('Using Github API to render markdown for manual reload updates.');
+        if(argv.a)
+            console.log('Using Github API to render markdown for all updates.');
+        else if(argv.b)
+            console.log('Using Github API to render markdown for manual reload updates.');
     
-    server.listen(argv.p, argv.h);
-    console.log('GFMS serving ' + process.cwd() + ' at http://' + argv.h + ':' + argv.p + '/ - press CTRL+C to exit.');
-});
+        server.listen(argv.p, argv.h);
+        console.log('GFMS serving ' + process.cwd() + ' at http://' + argv.h + ':' + argv.p + '/ - press CTRL+C to exit.');
+    
+        lastCssUpdate = Date.now();
+        startCssUpdater(cssUpdateInterval);
+    }));
+})();

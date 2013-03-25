@@ -2,11 +2,8 @@
 html
     head
         title #{title} - Github Flavored Markdown Server
-        //link(rel='stylesheet', href='/github.css')
         each style in styles
-            link(rel='stylesheet', href=style)
-        //link(rel='stylesheet', href='https://a248.e.akamai.net/assets.github.com/stylesheets/bundles/github-e99d6cd1ba845aee419becbfcd08b713f4bf0a55.css')
-        //link(rel='stylesheet', href='https://a248.e.akamai.net/assets.github.com/stylesheets/bundles/github2-295a02b2f2bdc835d7af368e96a0579808719484.css')
+            link(href=style, rel='stylesheet', type='text/css')
         link(rel='stylesheet', href='/style.css')
         script(src='http://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js')
         script(src='/ws-rpc-client.min.js')
