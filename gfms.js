@@ -187,6 +187,9 @@ function renderWithGithub(contents, cb) { // cb(err, res)
             text: contents,
             mode: 'markdown'
         },
+        headers: {
+          'User-Agent': 'gfms/0.0.6 https://github.com/ypocat/gfms'
+        },
         encoding: 'utf8'
     };
 
