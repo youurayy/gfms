@@ -28,6 +28,8 @@ var cssCheckInterval = 1000 * 60 * 5;
 var lastCssUpdate = 0;
 var updatingCss;
 
+var pkgJson = require('./package.json');
+
 function cb(err, msg) {
     console.log(err ? (err.stack || err) : msg || 'done');
 }
@@ -188,7 +190,7 @@ function renderWithGithub(contents, cb) { // cb(err, res)
             mode: 'markdown'
         },
         headers: {
-          'User-Agent': 'gfms/0.0.6 https://github.com/ypocat/gfms'
+          'User-Agent': 'gfms/' + pkgJson.version + ' https://github.com/ypocat/gfms'
         },
         encoding: 'utf8'
     };
@@ -306,7 +308,7 @@ _x(cb, false, function() {
             console.log('Using Github API to render markdown for manual reload updates.');
     
         server.listen(argv.p, argv.h);
-        console.log('GFMS serving ' + process.cwd() + ' at http://' + argv.h + ':' + argv.p + '/ - press CTRL+C to exit.');
+        console.log('GFMS ' + pkgJson.version + ' serving ' + process.cwd() + ' at http://' + argv.h + ':' + argv.p + '/ - press CTRL+C to exit.');
     
         lastCssUpdate = Date.now();
         startCssUpdater(cssUpdateInterval);
