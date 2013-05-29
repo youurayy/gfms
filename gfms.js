@@ -111,7 +111,7 @@ app.get('*', function(req, res, next) {
     }
 
     var base = req.path.replace('..', 'DENIED').replace(/\/$/, '');
-    var dir = process.cwd() + base;
+    var dir = decodeURI(process.cwd() + base);
     
     var stat;
     try {
