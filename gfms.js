@@ -42,6 +42,7 @@ var argv = optimist
     .alias('h', 'host')
     .describe('h', 'Host address to bind to.')
     .default('h', 'localhost')
+    .describe('proxy', 'if behind a proxy, proxy url.')
     .boolean('a')
     .describe('a', 'Render using Github API.')
     .alias('a', 'api')
@@ -195,6 +196,10 @@ function renderWithGithub(contents, cb) { // cb(err, res)
         encoding: 'utf8'
     };
 
+    if(argv.proxy && argv.proxy.length > 0) {
+        opts.proxy = argv.proxy;
+    }
+
     request(opts, _x(cb, true, function(err, res, body) {
         console.log('remaining API requests: %d', res.headers['x-ratelimit-remaining']);
         cb(null, body);
@@ -241,15 +246,19 @@ function loadStyles(_cb) {
     _x(cb, false, function() {
     
         console.log('Loading Github CSS...');
-    
-        request('http://www.github.com', _x(cb, true, function(err, res, body) {
+
+        var opts = {url:'http://www.github.com'};
+        if(argv.proxy && argv.proxy.length > 0) {
+            opts.proxy = argv.proxy;
+        }
+        request(opts, _x(cb, true, function(err, res, body) {
         
             if(res.statusCode != 200)
                 throw 'Cannot load .css links from Github';
 
             var ff = {}
             var m;
-            var re = /href="([^"]+?assets\.github\.com\/assets\/[^"]+?\.css)"/g;
+            var re = /href="([^"]+?\/assets\/[^"]+?\.css)"/g;
          
             while(m = re.exec(body)) {
             
@@ -258,7 +267,11 @@ function loadStyles(_cb) {
                     var base = '/styles/' + getStylesheetBaseName(url);
                     
                     ff[base] = _x(null, false, function(cb) {
-                        loadStyle(url, cb);
+                        var opts = {url:url};
+                        if(argv.proxy && argv.proxy.length > 0) {
+                            opts.proxy = argv.proxy;
+                        }
+                        loadStyle(opts, cb);
                     });
                     
                 })(m[1]);
