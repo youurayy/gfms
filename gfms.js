@@ -249,7 +249,7 @@ function loadStyles(_cb) {
 
             var ff = {}
             var m;
-            var re = /href="([^"]+?assets\.github\.com\/assets\/[^"]+?\.css)"/g;
+            var re = /href="([^"]+?\/assets\/[^"]+?\.css)"/g;
          
             while(m = re.exec(body)) {
             
