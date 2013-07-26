@@ -97,6 +97,10 @@ function is_markdown(v) {
     return v.match(/.*?(?:\.md|\.markdown)$/) ? true : false;
 }
 
+function is_image(v) {
+    return v.match(/.*?(?:\.png|\.jpg|\.gif|\.svg)$/) ? true : false;
+}
+
 app.get('*', function(req, res, next) {
     
     if(req.path.indexOf('/styles/') === 0) {
@@ -112,6 +116,7 @@ app.get('*', function(req, res, next) {
     }
 
     var base = req.path.replace('..', 'DENIED').replace(/\/$/, '');
+    var query = req.query || {}
     var dir = decodeURI(process.cwd() + base);
     
     var stat;
@@ -126,7 +131,7 @@ app.get('*', function(req, res, next) {
         
         var files = _.chain(fs.readdirSync(dir)).filter(function(v) {
             var stat = fs.statSync(dir + '/' + v);
-            return stat.isDirectory() || (stat.isFile() && is_markdown(v));
+            return stat.isDirectory() || (stat.isFile() && (is_markdown(v) || is_image(v)));
         }).map(function(v) {
             return {
                 url: base + '/' + v,
@@ -140,8 +145,11 @@ app.get('*', function(req, res, next) {
             styles: Object.keys(styles),
             title: basename(dir)
         });
-    }
-    else if(is_markdown(dir)) {
+    } else if(query.raw === "true") {
+        var content = fs.readFileSync(dir);
+        res.writeHead('200');
+        res.end(content,'binary');
+    } else if(is_markdown(dir)) {
         
         if(!watched[dir]) {
             fs.watchFile(dir, { interval: 500 }, function(curr, prev) {
@@ -167,6 +175,32 @@ app.get('*', function(req, res, next) {
         }));
         
     }
+    else if(is_image(dir)) {
+
+        if(!watched[dir]) {
+            fs.watchFile(dir, { interval: 500 }, function(curr, prev) {
+                if(curr.mtime.getTime() !== prev.mtime.getTime()) {
+
+                    console.log('file ' + dir + ' has changed');
+
+                    renderImageFile(base, argv.a, _x(console.log, false, function(err, rendered) {
+                        wss.message('update', { update: dir, content: err || rendered });
+                    }));
+                }
+            });
+            watched[dir] = true;
+        }
+
+        renderImageFile(base, argv.a || argv.b, _x(next, true, function(err, rendered) {
+            res.render('file', {
+                file: rendered,
+                title: basename(dir),
+                styles: Object.keys(styles),
+                fullname: dir
+            });
+        }));
+
+    }
     else
         return next();
 });
@@ -175,6 +209,11 @@ function renderFile(file, api, cb) { // cb(err, res)
     var contents = fs.readFileSync(file, 'utf8');
     var func = api ? renderWithGithub : renderWithShowdown;
     func(contents, _x(cb, true, cb));
+}
+
+function renderImageFile(file, api, cb) { // cb(err, res)
+    var html = '<div class="image js-image"><span class="border-wrap"><img src="' + file + '?raw=true"></span></div>';
+    cb(null, html);
 }
 
 function renderWithShowdown(contents, cb) { // cb(err, res)
