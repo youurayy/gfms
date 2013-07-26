@@ -3,7 +3,7 @@
     "name": "gfms",
     "description": "Github Flavored Markdown Server",
     "keywords": [ "markdown", "server", "local", "reloading", "github", "render", "gfm" ],
-    "version": "0.0.9",
+    "version": "0.0.10",
     "homepage": "http://github.com/ypocat/gfms",
     "repository": {
         "type": "git",
