@@ -9,8 +9,7 @@ var nib = require('nib');
 var app = express();
 var http = require('http');
 var server = http.createServer(app);
-var markdown = //require('github-flavored-markdown').parse;
-    require('./showdown.js').parse;
+var marked = require('marked');
 var _ = require('underscore');
 var fs = require('fs');
 var ews = require('ws');
@@ -203,7 +202,7 @@ app.get('*', function(req, res, next) {
 
 function renderFile(file, api, cb) { // cb(err, res)
     var contents = fs.readFileSync(file, 'utf8');
-    var func = api ? renderWithGithub : renderWithShowdown;
+    var func = api ? renderWithGithub : renderWithMarked;
     func(contents, _x(cb, true, cb));
 }
 
@@ -212,9 +211,15 @@ function renderImageFile(file, api, cb) { // cb(err, res)
     cb(null, html);
 }
 
-function renderWithShowdown(contents, cb) { // cb(err, res)
-    var res = markdown(contents);
-    cb(null, res);
+function renderWithMarked(contents, cb) { // cb(err, res)
+    marked.setOptions({
+      gfm: true,
+      tables: true,
+      smartLists: true
+    });
+
+    var html = marked(contents);
+    cb(null, html);
 }
 
 function renderWithGithub(contents, cb) { // cb(err, res)
