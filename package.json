@@ -30,6 +30,7 @@
     "dependencies": {
         "express": "*",
         "marked": "*",
+        "highlight.js": "*",
         "jade": "*",
         "laeh2": "*",
         "nib": "*",
