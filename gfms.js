@@ -257,6 +257,7 @@ function renderWithMarked(contents, cb) { // cb(err, res)
       gfm: true,
       tables: true,
       smartLists: true,
+      breaks: true,
       highlight: function (code, lang) {
         if (lang) {
             return highlight.highlight(lang, code, true).value;
