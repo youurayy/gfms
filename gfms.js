@@ -51,42 +51,38 @@ var argv = optimist
     .alias('n', 'no-api-on-reload')
     .argv;
 
-app.configure(function() {
-
-    var pub = __dirname + '/public';
-    var views = __dirname + '/views';
-    app.set('views', views);
-    app.set('view engine', 'jade');
-    app.set('view options', { layout: false });
+var pub = __dirname + '/public';
+var views = __dirname + '/views';
+app.set('views', views);
+app.set('view engine', 'jade');
+app.set('view options', { layout: false });
 
 
-    if(process.env.NODE_ENV === 'development') {
-        // only use Stylus in development, because when gfms is installed
-        // globally with sudo, and then run by an user, it cannot create
-        // the generate .css files (and I'm too tired to look for a solution now).
-        app.use(stylus.middleware({
-            src: views,
-            dest: pub,
-            compile: function(str, path) {
-                return stylus(str)
-                    .set('filename', path)
-                    .set('compress', true)
-                    .use(nib())
-                    .import('nib');
-            }
-        }));
-    }
+if(process.env.NODE_ENV === 'development') {
+    // only use Stylus in development, because when gfms is installed
+    // globally with sudo, and then run by an user, it cannot create
+    // the generate .css files (and I'm too tired to look for a solution now).
+    app.use(stylus.middleware({
+        src: views,
+        dest: pub,
+        compile: function(str, path) {
+            return stylus(str)
+                .set('filename', path)
+                .set('compress', true)
+                .use(nib())
+                .import('nib');
+        }
+    }));
 
-    app.use(wss.middleware(express));
-    app.use(express.favicon());
-    app.use(app.router);
-    app.use(express.static(pub));
-    app.use(express.errorHandler({ dump: true, stack: true }));
-});
-
-app.configure('development', function() {
     utilz.watchFile(__filename);
-});
+}
+
+app.use(wss.middleware(express));
+// app.use(express.favicon());
+// app.use(app.router);
+app.use(express.static(pub));
+// app.use(express.errorHandler({ dump: true, stack: true }));
+
 
 function basename(fn) {
     var m = fn.match(/.*?([^\/]+)\/?$/);
@@ -102,7 +98,7 @@ function is_image(v) {
 }
 
 app.get('*', function(req, res, next) {
-    
+
     if(req.path.indexOf('/styles/') === 0) {
         var style = styles[req.path];
         if(!style) {
@@ -118,7 +114,7 @@ app.get('*', function(req, res, next) {
     var base = req.path.replace('..', 'DENIED').replace(/\/$/, '');
     var query = req.query || {}
     var dir = decodeURI(process.cwd() + base);
-    
+
     var stat;
     try {
         stat = fs.statSync(dir);
@@ -126,9 +122,9 @@ app.get('*', function(req, res, next) {
     catch(e) {
         return next();
     }
-    
+
     if(stat.isDirectory()) {
-        
+
         var files = _.chain(fs.readdirSync(dir)).filter(function(v) {
             var stat = fs.statSync(dir + '/' + v);
             return stat.isDirectory() || (stat.isFile() && (is_markdown(v) || is_image(v)));
@@ -138,7 +134,7 @@ app.get('*', function(req, res, next) {
                 name: v
             };
         }).value();
-        
+
         res.render('directory', {
             files: files,
             dir: dir,
@@ -150,13 +146,13 @@ app.get('*', function(req, res, next) {
         res.writeHead('200');
         res.end(content,'binary');
     } else if(is_markdown(dir)) {
-        
+
         if(!watched[dir]) {
             fs.watchFile(dir, { interval: 500 }, function(curr, prev) {
                 if(curr.mtime.getTime() !== prev.mtime.getTime()) {
 
                     console.log('file ' + dir + ' has changed');
-                    
+
                     renderFile(dir, argv.a, _x(console.log, false, function(err, rendered) {
                         wss.message('update', { update: dir, content: err || rendered });
                     }));
@@ -164,7 +160,7 @@ app.get('*', function(req, res, next) {
             });
             watched[dir] = true;
         }
-        
+
         renderFile(dir, argv.a || argv.b, _x(next, true, function(err, rendered) {
             res.render('file', {
                 file: rendered,
@@ -173,7 +169,7 @@ app.get('*', function(req, res, next) {
                 fullname: dir
             });
         }));
-        
+
     }
     else if(is_image(dir)) {
 
@@ -251,39 +247,39 @@ process.on('SIGINT', function() {
 });
 
 function loadStyle(style, cb) {
-    
+
     request(style, _x(cb, true, function(err, res, body) {
-        
+
         if(res.statusCode != 200)
             throw 'Cannot load stylesheet: ' + style;
-        
+
         cb(null, body);
     }));
 }
 
 function getStylesheetBaseName(url) {
-    
+
     var m = /\/([^\/]+)$/.exec(url);
-    
+
     if(!m)
         _e('unexpected stylesheet url: ' + url);
-        
+
     return m[1];
 }
 
 function loadStyles(_cb) {
-    
+
     if(updatingCss)
         return;
     updatingCss = true;
-    
+
     function cb(err) {
         updatingCss = false;
         _cb(err);
     }
-    
+
     _x(cb, false, function() {
-    
+
         console.log('Loading Github CSS...');
 
         var opts = {url:'http://www.github.com'};
@@ -291,20 +287,20 @@ function loadStyles(_cb) {
             opts.proxy = argv.proxy;
         }
         request(opts, _x(cb, true, function(err, res, body) {
-        
+
             if(res.statusCode != 200)
                 throw 'Cannot load .css links from Github';
 
             var ff = {}
             var m;
             var re = /href="([^"]+?\/assets\/[^"]+?\.css)"/g;
-         
+
             while(m = re.exec(body)) {
-            
+
                 (function(url) {
-                    
+
                     var base = '/styles/' + getStylesheetBaseName(url);
-                    
+
                     ff[base] = _x(null, false, function(cb) {
                         var opts = {url:url};
                         if(argv.proxy && argv.proxy.length > 0) {
@@ -312,36 +308,36 @@ function loadStyles(_cb) {
                         }
                         loadStyle(opts, cb);
                     });
-                    
+
                 })(m[1]);
             }
-        
+
             async.parallel(ff, _x(cb, true, function(err, res) {
                 styles = res;
                 cb();
             }));
-        
+
         }));
-        
+
     })();
 }
 
 function startCssUpdater(interval) {
-    
+
     console.log('Auto-updating CSS every ' + utilz.timeSpan(interval) + '.');
-    
+
     setInterval(_x(cb, false, function() {
-        
+
         if(Date.now() - lastCssUpdate > interval) {
-            
+
             loadStyles(_x(cb, true, function() {
-            
+
                 lastCssUpdate = Date.now();
-            
+
                 cb(null, 'Auto-updated CSS.');
             }));
         }
-        
+
     }), cssCheckInterval);
 }
 
@@ -350,18 +346,18 @@ if(!argv.a && !argv.n)
 
 _x(cb, false, function() {
     loadStyles(_x(cb, true, function() {
-    
+
         if(!Object.keys(styles).length)
             _e('Cannot parse .css links from Github');
-        
+
         if(argv.a)
             console.log('Using Github API to render markdown for all updates.');
         else if(argv.b)
             console.log('Using Github API to render markdown for manual reload updates.');
-    
+
         server.listen(argv.p, argv.h);
         console.log('GFMS ' + pkgJson.version + ' serving ' + process.cwd() + ' at http://' + argv.h + ':' + argv.p + '/ - press CTRL+C to exit.');
-    
+
         lastCssUpdate = Date.now();
         startCssUpdater(cssUpdateInterval);
     }));
