@@ -102,12 +102,12 @@ app.get('*', function(req, res, next) {
     if(req.path.indexOf('/styles/') === 0) {
         var style = styles[req.path];
         if(!style) {
-            res.send(404);
+            res.status(404).send();
         }
         else {
             res.set('Content-Type', 'text/css');
             // res.set('ETag', utilz.randomString());
-            return res.send(200, style);
+            return res.status(200).send(style);
         }
     }
 
