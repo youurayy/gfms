@@ -1,4 +1,3 @@
-
 var laeh = require('laeh2').leanStacks(true);
 var _e = laeh._e;
 var _x = laeh._x;
@@ -9,8 +8,8 @@ var nib = require('nib');
 var app = express();
 var http = require('http');
 var server = http.createServer(app);
-var markdown = //require('github-flavored-markdown').parse;
-    require('./showdown.js').parse;
+var marked = require('marked');
+var highlight = require('highlight.js');
 var _ = require('underscore');
 var fs = require('fs');
 var ews = require('ws');
@@ -97,6 +96,16 @@ function is_image(v) {
     return v.match(/.*?(?:\.png|\.jpg|\.gif|\.svg)$/) ? true : false;
 }
 
+function is_sourcecode(v) {
+    var matched = v.match(/.*?(?:(\.js|\.php|\.php5|\.py|\.sql))$/, 'i');
+
+    if (matched) {
+        return matched[1].substring(1).toLowerCase();
+    }
+
+    return false;
+}
+
 app.get('*', function(req, res, next) {
 
     if(req.path.indexOf('/styles/') === 0) {
@@ -112,8 +121,9 @@ app.get('*', function(req, res, next) {
     }
 
     var base = req.path.replace('..', 'DENIED').replace(/\/$/, '');
-    var query = req.query || {}
+    var query = req.query || {};
     var dir = decodeURI(process.cwd() + base);
+    var lang = '';
 
     var stat;
     try {
@@ -197,13 +207,37 @@ app.get('*', function(req, res, next) {
         }));
 
     }
+    else if(lang = is_sourcecode(dir)) {
+        if(!watched[dir]) {
+            fs.watchFile(dir, { interval: 500 }, function(curr, prev) {
+                if(curr.mtime.getTime() !== prev.mtime.getTime()) {
+
+                    console.log('file ' + dir + ' has changed');
+
+                    renderSourceCode(dir, argv.a, lang, _x(console.log, false, function(err, rendered) {
+                        wss.message('update', { update: dir, content: err || rendered });
+                    }));
+                }
+            });
+            watched[dir] = true;
+        }
+
+        renderSourceCode(dir, argv.a || argv.b, lang, _x(next, true, function(err, rendered) {
+            res.render('file', {
+                file: rendered,
+                title: basename(dir),
+                styles: Object.keys(styles),
+                fullname: dir
+            });
+        }));
+    }
     else
         return next();
 });
 
 function renderFile(file, api, cb) { // cb(err, res)
     var contents = fs.readFileSync(file, 'utf8');
-    var func = api ? renderWithGithub : renderWithShowdown;
+    var func = api ? renderWithGithub : renderWithMarked;
     func(contents, _x(cb, true, cb));
 }
 
@@ -212,9 +246,29 @@ function renderImageFile(file, api, cb) { // cb(err, res)
     cb(null, html);
 }
 
-function renderWithShowdown(contents, cb) { // cb(err, res)
-    var res = markdown(contents);
-    cb(null, res);
+function renderSourceCode(file, api, lang, cb) { // cb(err, res)
+    var contents = "```" + lang + "\n" + fs.readFileSync(file, 'utf8') + "\n```";
+    var func = api ? renderWithGithub : renderWithMarked;
+    func(contents, _x(cb, true, cb));
+}
+
+function renderWithMarked(contents, cb) { // cb(err, res)
+    marked.setOptions({
+      gfm: true,
+      tables: true,
+      smartLists: true,
+      breaks: true,
+      highlight: function (code, lang) {
+        if (lang) {
+            return highlight.highlight(lang, code, true).value;
+        } else {
+            return highlight.highlightAuto(code).value;
+        }
+      }
+    });
+
+    var html = marked(contents);
+    cb(null, html);
 }
 
 function renderWithGithub(contents, cb) { // cb(err, res)
@@ -291,7 +345,7 @@ function loadStyles(_cb) {
             if(res.statusCode != 200)
                 throw 'Cannot load .css links from Github';
 
-            var ff = {}
+            var ff = {};
             var m;
             var re = /href="([^"]+?\/assets\/[^"]+?\.css)"/g;
 
@@ -362,4 +416,3 @@ _x(cb, false, function() {
         startCssUpdater(cssUpdateInterval);
     }));
 })();
-
