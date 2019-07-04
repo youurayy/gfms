@@ -11,7 +11,7 @@
         "render",
         "gfm"
     ],
-    "version": "0.0.12",
+    "version": "0.1.0",
     "homepage": "http://github.com/ypocat/gfms",
     "repository": {
         "type": "git",
@@ -28,6 +28,7 @@
         "node": "*"
     },
     "dependencies": {
+        "async-mini": "*",
         "express": "*",
         "marked": "*",
         "highlight.js": "*",
@@ -36,12 +37,11 @@
         "nib": "*",
         "optimist": "*",
         "request": "*",
-        "ws": "*",
-        "ws-rpc": "*",
         "stylus": "*",
         "underscore": "*",
         "utilz": "*",
-        "async-mini": "*"
+        "ws": "^1.1.5",
+        "ws-rpc": "0.0.8"
     },
     "devDependencies": {},
     "licenses": [
