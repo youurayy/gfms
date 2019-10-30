@@ -40,7 +40,7 @@
         "stylus": "*",
         "underscore": "*",
         "utilz": "*",
-        "ws": "^1.1.5",
+        "ws": "^3.3.1",
         "ws-rpc": "0.0.8"
     },
     "devDependencies": {},
